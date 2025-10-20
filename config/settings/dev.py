@@ -4,6 +4,14 @@ from config.settings.base import *  # noqa
 
 DEBUG = True
 
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
+# CORS 설정
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",

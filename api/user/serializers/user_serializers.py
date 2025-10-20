@@ -44,6 +44,12 @@ class SocialLoginRequestSerializer(serializers.Serializer):
     password = serializers.CharField(
         required=False, write_only=True, help_text="비밀번호 (native 로그인)"
     )
+    id_token = serializers.CharField(
+        required=False, help_text="Firebase ID Token (Firebase 로그인)"
+    )
+    fcmToken = serializers.CharField(
+        required=False, allow_null=True, help_text="FCM 토큰"
+    )
 
 
 class SocialLoginQuerySerializer(serializers.Serializer):

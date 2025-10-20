@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
-import requests
+from firebase_admin import auth
+from loguru import logger
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.user.exceptions import OAuthCustomExceptions
@@ -18,47 +19,47 @@ class AuthService(ABC):
         return RefreshToken.for_user(user)
 
 
-class GoogleAuthService(AuthService):
-    def get_or_create_user(self, identifier: str, fcmToken: str, name: str = None):
-        return self._create_user(identifier, fcmToken, name)
+class FirebaseAuthService(AuthService):
+    def get_or_create_user(self, id_token: str, fcmToken: str, name: str = None):
+        return self._create_user(id_token, fcmToken, name)
 
-    def _get_google_user_info(self, access_token):
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-        }
-        response = requests.get(
-            "https://www.googleapis.com/oauth2/v3/userinfo", headers=headers
-        )
-        if response.status_code == 500:
-            retry_response = requests.get(
-                f"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={access_token}"
-            )
-            if retry_response.status_code == 200:
-                return retry_response.json()
+    def _verify_firebase_token(self, id_token: str):
+        """Firebase ID Token 검증"""
+        try:
+            decoded_token = auth.verify_id_token(id_token)
+            return decoded_token
+        except auth.InvalidIdTokenError:
+            logger.error("Invalid Firebase ID token")
             return None
-        if response.status_code == 200:
-            return response.json()
-        return None
+        except auth.ExpiredIdTokenError:
+            logger.error("Expired Firebase ID token")
+            return None
+        except Exception as e:
+            logger.error(f"Firebase token verification failed: {e}")
+            return None
 
-    def _create_user(self, google_token, fcmToken, name):
-        if not google_token:
+    def _create_user(self, id_token: str, fcmToken: str, name: str):
+        if not id_token:
             raise CustomException(OAuthCustomExceptions.INVALID_TOKEN)
 
-        # Google API로 사용자 정보 가져오기
-        user_info = self._get_google_user_info(google_token)
-        if not user_info:
+        # Firebase ID Token 검증
+        decoded_token = self._verify_firebase_token(id_token)
+        if not decoded_token:
             raise CustomException(OAuthCustomExceptions.INVALID_TOKEN)
 
-        if "user_id" in user_info:
-            user_info["sub"] = user_info["user_id"]
+        # Firebase에서 사용자 정보 추출
+        user_id = decoded_token.get("uid")
+        email = decoded_token.get("email", "")
+        username = decoded_token.get("name", name or "")
+        provider = decoded_token.get("firebase", {}).get("sign_in_provider", "firebase")
 
         # 사용자 생성 또는 조회
         user, is_created = User.objects.get_or_create(
-            identifier=user_info["sub"],  # Google의 고유 사용자 ID
+            identifier=user_id,
             defaults={
-                "username": user_info.get("name", ""),
-                "email": user_info.get("email", ""),
-                "provider": "google",
+                "username": username,
+                "email": email,
+                "provider": provider,
             },
         )
 

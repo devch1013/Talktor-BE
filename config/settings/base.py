@@ -3,14 +3,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(".env")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-
-ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -36,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     *LOCAL_APPS,
+    *THIRD_PARTY_APPS,
 ]
 
 
@@ -151,3 +150,6 @@ SWAGGER_SETTINGS = {
     },
     "SECURITY_REQUIREMENTS": [{"BearerAuth": []}],
 }
+
+from .third_party.firebase_settings import *  # noqa
+from .third_party.jwt_settings import *  # noqa

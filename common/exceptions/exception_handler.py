@@ -3,7 +3,7 @@ from loguru import logger
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
-from common.exceptions import CustomException
+from common.exceptions.custom_exceptions import CustomException
 
 
 def custom_exception_handler(exc, context):

@@ -19,7 +19,7 @@ from api.user.serializers.user_serializers import (
 )
 from api.user.services.auth_service import (
     AuthService,
-    GoogleAuthService,
+    FirebaseAuthService,
 )
 from common.exceptions.custom_exceptions import CustomException
 
@@ -84,9 +84,11 @@ class SocialAuthView(
             password = request_data.get("password")
             user = service.get_or_create_user(identifier, password)
         else:
-            code = query_data.get("code")
+            # Firebase 로그인: request body에서 id_token과 fcmToken 가져오기
+            id_token = request_data.get("id_token")
+            fcm_token = request_data.get("fcmToken")
 
-            user = service.get_or_create_user(code, None)
+            user = service.get_or_create_user(id_token, fcm_token)
 
         refresh = service.get_token(user)
         return Response(
@@ -106,7 +108,7 @@ class SocialAuthView(
     def get_service(self, provider: str):
         """인증 서비스 팩토리 메소드"""
         if provider == "google":
-            return GoogleAuthService()
+            return FirebaseAuthService()
         else:
             raise ValueError("Invalid provider")
 
