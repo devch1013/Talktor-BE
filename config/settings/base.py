@@ -132,9 +132,9 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "common.authentication.custom_jwt_authentication.CustomJWTAuthentication",
     ),
-    "DEFAULT_RENDERER_CLASSES": (
-        "common.renderer.custom_json_renderer.CustomJSONRenderer",
-    ),
+    # "DEFAULT_RENDERER_CLASSES": (
+    #     "common.renderer.custom_json_renderer.CustomJSONRenderer",
+    # ),
     "EXCEPTION_HANDLER": "common.exceptions.exception_handler.custom_exception_handler",
 }
 
@@ -150,7 +150,7 @@ SWAGGER_SETTINGS = {
         }
     },
     "SECURITY_REQUIREMENTS": [{"BearerAuth": []}],
-    "DEFAULT_AUTO_SCHEMA_CLASS": "common.swagger.inspectors.WrappedResponseAutoSchema",
+    # "DEFAULT_AUTO_SCHEMA_CLASS": "common.swagger.inspectors.WrappedResponseAutoSchema",
 }
 
 # Media files (User uploaded files)

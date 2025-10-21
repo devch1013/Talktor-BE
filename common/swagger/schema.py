@@ -46,12 +46,12 @@ def get_swagger_response_dict(
 
     if exception_enums:
         for exception_enum in exception_enums:
-            if exception_enum.code in api_exception_str_info.keys():
-                api_exception_str_info[exception_enum.code] += (
+            if exception_enum.status in api_exception_str_info.keys():
+                api_exception_str_info[exception_enum.status] += (
                     f'{{"message" : "{exception_enum.message}", "code" : "{exception_enum.code}" }}\n\n'
                 )
             else:
-                api_exception_str_info[exception_enum.code] = (
+                api_exception_str_info[exception_enum.status] = (
                     f'{{"message" : "{exception_enum.message}", "code" : "{exception_enum.code}" }}\n\n'
                 )
 
