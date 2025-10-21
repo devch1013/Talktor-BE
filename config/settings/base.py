@@ -18,6 +18,9 @@ AUTH_USER_MODEL = "user.User"
 LOCAL_APPS = [
     "api.user",
     "api.project",
+    "api.quiz",
+    "api.chat",
+    "api.cheatsheet",
 ]
 
 THIRD_PARTY_APPS = [

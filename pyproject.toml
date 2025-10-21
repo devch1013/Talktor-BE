@@ -27,12 +27,26 @@ dependencies = [
     "pdf2image (>=1.17.0,<2.0.0)",
     "pypdf2 (>=3.0.1,<4.0.0)",
     "pymupdf (>=1.26.5,<2.0.0)",
-    "pillow (>=12.0.0,<13.0.0)"
+    "pillow (>=12.0.0,<13.0.0)",
+    "langgraph (>=1.0.1,<2.0.0)",
+    "langchain (>=1.0.1,<2.0.0)",
+    "ipykernel (>=7.0.1,<8.0.0)",
+    "langchain-anthropic (>=1.0.0,<2.0.0)",
+    "langchain-openai (>=1.0.0,<2.0.0)",
+    "pytest-django (>=4.11.1,<5.0.0)"
 ]
 
 [tool.poetry]
 package-mode = false  # 이 줄 추가
 
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^7.0.1"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-v -s --tb=short --reuse-db --nomigrations"

@@ -6,9 +6,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from api.project.exceptions import ProjectExceptions, QuizExceptions
-from api.project.models import Quiz, QuizQuestions
-from api.project.serializers.quiz_serializers import (
+from api.project.exceptions import ProjectExceptions
+from api.quiz.exceptions import QuizExceptions
+from api.quiz.models import Quiz, QuizQuestions
+from api.quiz.serializers.quiz_serializers import (
     QuizAnswerBatchSubmitSerializer,
     QuizAnswerSubmitSerializer,
     QuizCreateSerializer,
@@ -17,7 +18,7 @@ from api.project.serializers.quiz_serializers import (
     QuizSerializer,
     QuizStatusSerializer,
 )
-from api.project.services.quiz_service import QuizService
+from api.quiz.services.quiz_service import QuizService
 from common.exceptions.custom_exceptions import CustomException
 from common.swagger.schema import get_swagger_response_dict
 
@@ -35,11 +36,6 @@ class QuizViewSet(
     """
 
     permission_classes = [IsAuthenticated]
-    serializer_class = QuizSerializer
-
-    def get_queryset(self):
-        """현재 사용자의 퀴즈만 조회 (완료된 퀴즈만)"""
-        return Quiz.objects.filter(project__user=self.request.user, status="completed")
 
     @swagger_auto_schema(
         operation_summary="프로젝트의 퀴즈 목록 조회",

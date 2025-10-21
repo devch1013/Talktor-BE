@@ -5,8 +5,14 @@ from typing import Dict, List
 from django.db import transaction
 from django.utils import timezone
 
-from api.project.models import Material, Project, Quiz, QuizAnswerHistory, QuizQuestions
-from api.project.models.quiz import QuizDifficulty, QuizQuestionType
+from api.project.models import Material, Project
+from api.quiz.models import (
+    Quiz,
+    QuizAnswerHistory,
+    QuizDifficulty,
+    QuizQuestions,
+    QuizQuestionType,
+)
 from api.user.models import User
 
 

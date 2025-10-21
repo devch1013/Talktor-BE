@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
-from api.project.models import Material, Quiz, QuizAnswerHistory, QuizQuestions
-from api.project.models.quiz import QuizDifficulty, QuizQuestionType
+from api.project.models.material import Material
+from api.quiz.models import Quiz, QuizAnswerHistory, QuizQuestions
+from api.quiz.models.quiz import QuizDifficulty, QuizQuestionType
 
 
 class QuizCreateSerializer(serializers.Serializer):
