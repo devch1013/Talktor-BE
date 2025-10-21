@@ -150,6 +150,7 @@ SWAGGER_SETTINGS = {
         }
     },
     "SECURITY_REQUIREMENTS": [{"BearerAuth": []}],
+    "DEFAULT_AUTO_SCHEMA_CLASS": "common.swagger.inspectors.WrappedResponseAutoSchema",
 }
 
 # Media files (User uploaded files)
