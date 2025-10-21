@@ -1,3 +1,3 @@
-from .project_view import SubjectViewSet, MaterialViewSet
+from .project_view import MaterialViewSet, ProjectViewSet
 
-__all__ = ['SubjectViewSet', 'MaterialViewSet']
+__all__ = ["ProjectViewSet", "MaterialViewSet"]

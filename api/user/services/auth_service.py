@@ -20,25 +20,29 @@ class AuthService(ABC):
 
 
 class FirebaseAuthService(AuthService):
-    def get_or_create_user(self, id_token: str, fcmToken: str, name: str = None):
-        return self._create_user(id_token, fcmToken, name)
+    def get_or_create_user(self, id_token: str, name: str = None):
+        return self._create_user(id_token, name)
 
     def _verify_firebase_token(self, id_token: str):
         """Firebase ID Token 검증"""
         try:
-            decoded_token = auth.verify_id_token(id_token)
+            # check_revoked=False로 설정하고, clock skew tolerance 사용
+            decoded_token = auth.verify_id_token(
+                id_token, check_revoked=False, clock_skew_seconds=10
+            )
             return decoded_token
-        except auth.InvalidIdTokenError:
-            logger.error("Invalid Firebase ID token")
+        except auth.InvalidIdTokenError as e:
+            logger.error(f"Invalid Firebase ID token: {e}")
             return None
-        except auth.ExpiredIdTokenError:
-            logger.error("Expired Firebase ID token")
+        except auth.ExpiredIdTokenError as e:
+            logger.error(f"Expired Firebase ID token: {e}")
             return None
         except Exception as e:
             logger.error(f"Firebase token verification failed: {e}")
             return None
 
-    def _create_user(self, id_token: str, fcmToken: str, name: str):
+    def _create_user(self, id_token: str, name: str):
+        logger.info(f"Creating user with id_token: {id_token}")
         if not id_token:
             raise CustomException(OAuthCustomExceptions.INVALID_TOKEN)
 
@@ -62,10 +66,6 @@ class FirebaseAuthService(AuthService):
                 "provider": provider,
             },
         )
-
-        if fcmToken:
-            user.fcm_token = fcmToken
-            user.save()
 
         return user
 

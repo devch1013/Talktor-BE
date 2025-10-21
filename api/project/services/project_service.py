@@ -173,9 +173,9 @@ class MaterialService:
             자료 객체
         """
         material = get_object_or_404(
-            Material.objects.select_related("subject"),
+            Material.objects.select_related("project"),
             id=material_id,
-            subject__user=user,
+            project__user=user,
         )
         return material
 
