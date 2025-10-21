@@ -243,7 +243,7 @@ class MaterialViewSet(
 
         파일 업로드:
         - material_type: 'file'
-        - files: 업로드할 파일 목록 (여러 개 가능)
+        - files: 업로드할 파일 목록(하나만 가능)
         - title: 자료명
 
         URL 추가:
@@ -301,16 +301,17 @@ class MaterialViewSet(
         업로드된 파일 목록을 포함합니다.
         자신이 소유한 프로젝트의 자료만 조회할 수 있습니다.
         """,
-        responses={
-            200: MaterialSerializer,
-            401: "인증되지 않은 사용자",
-            404: "학습 자료를 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                200: MaterialSerializer,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["학습 자료"],
     )
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request, material_id: int):
         """학습 자료 상세 조회"""
-        material = MaterialService.get_material(kwargs["pk"], request.user)
+        material = MaterialService.get_material(material_id, request.user)
         serializer = MaterialSerializer(material)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -329,15 +330,15 @@ class MaterialViewSet(
         자신이 소유한 프로젝트의 자료만 수정할 수 있습니다.
         """,
         request_body=MaterialSerializer,
-        responses={
-            200: MaterialSerializer,
-            400: "잘못된 요청 데이터",
-            401: "인증되지 않은 사용자",
-            404: "학습 자료를 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                200: MaterialSerializer,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["학습 자료"],
     )
-    def update(self, request, *args, **kwargs):
+    def update(self, request, material_id: int):
         """학습 자료 수정 (전체)"""
         serializer = MaterialSerializer(data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
@@ -350,7 +351,7 @@ class MaterialViewSet(
             update_data["files"] = files
 
         material = MaterialService.update_material(
-            kwargs["pk"], request.user, **update_data
+            material_id, request.user, **update_data
         )
 
         return Response(MaterialSerializer(material).data, status=status.HTTP_200_OK)
@@ -364,15 +365,15 @@ class MaterialViewSet(
         자신이 소유한 프로젝트의 자료만 수정할 수 있습니다.
         """,
         request_body=MaterialSerializer,
-        responses={
-            200: MaterialSerializer,
-            400: "잘못된 요청 데이터",
-            401: "인증되지 않은 사용자",
-            404: "학습 자료를 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                200: MaterialSerializer,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["학습 자료"],
     )
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request, material_id: int):
         """학습 자료 부분 수정"""
         serializer = MaterialSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -385,7 +386,7 @@ class MaterialViewSet(
             update_data["files"] = files
 
         material = MaterialService.update_material(
-            kwargs["pk"], request.user, **update_data
+            material_id, request.user, **update_data
         )
 
         return Response(MaterialSerializer(material).data, status=status.HTTP_200_OK)
@@ -398,14 +399,15 @@ class MaterialViewSet(
         업로드된 파일도 함께 삭제됩니다.
         자신이 소유한 프로젝트의 자료만 삭제할 수 있습니다.
         """,
-        responses={
-            204: "삭제 성공",
-            401: "인증되지 않은 사용자",
-            404: "학습 자료를 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                204: None,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["학습 자료"],
     )
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, material_id: int):
         """학습 자료 삭제"""
-        MaterialService.delete_material(kwargs["pk"], request.user)
+        MaterialService.delete_material(material_id, request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)

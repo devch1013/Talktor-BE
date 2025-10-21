@@ -85,8 +85,6 @@ class MaterialListSerializer(serializers.ModelSerializer):
     목록 조회 시 필요한 정보만 포함
     """
 
-    file_count = serializers.SerializerMethodField(help_text="파일 개수")
-
     class Meta:
         model = Material
         fields = [
@@ -96,14 +94,9 @@ class MaterialListSerializer(serializers.ModelSerializer):
             "url",
             "page_count",
             "thumbnail_url",
-            "file_count",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
-
-    def get_file_count(self, obj):
-        """해당 자료의 파일 개수 반환"""
-        return obj.files.count()
 
 
 class MaterialCreateSerializer(serializers.Serializer):

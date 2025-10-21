@@ -24,14 +24,14 @@ class S3UploadUtil:
     @classmethod
     def upload(
         cls,
+        file_id: uuid.UUID,
         file: UploadedFile,
         prefix: S3KeyPrefix,
         file_name: str,
     ) -> tuple[str, str]:
-        _uuid = uuid.uuid4()
         file_name = file_name.replace(" ", "_")
         s3_bucket_name = AWSConfig.get_bucket_name()
-        s3_key = f"{prefix.value}/{_uuid}/{file_name}"
+        s3_key = f"{prefix.value}/{file_id}/{file_name}"
         # Upload to S3
         cls.upload_to_s3(file, s3_bucket_name, s3_key)
 
@@ -125,6 +125,7 @@ class S3UploadUtil:
     @classmethod
     def upload_bytes(
         cls,
+        file_id: uuid.UUID,
         file_data: bytes,
         prefix: S3KeyPrefix,
         file_name: str,
@@ -142,10 +143,10 @@ class S3UploadUtil:
         Returns:
             tuple[str, str]: (s3_key, s3_url)
         """
-        _uuid = uuid.uuid4()
+
         file_name = file_name.replace(" ", "_")
         s3_bucket_name = AWSConfig.get_bucket_name()
-        s3_key = f"{prefix.value}/{_uuid}/{file_name}"
+        s3_key = f"{prefix.value}/{file_id}/{file_name}"
 
         # S3에 직접 업로드
         session = boto3.Session()

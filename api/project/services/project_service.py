@@ -1,4 +1,5 @@
 import os
+import uuid
 from typing import List
 
 from django.db import transaction
@@ -9,6 +10,7 @@ from api.project.models import Material, Project
 from api.project.models.material import MaterialType
 from api.user.models import User
 from common.exceptions.custom_exceptions import CustomException
+from common.utils.pdf_utils import PDFUtils
 from common.utils.s3_utils import S3KeyPrefix, S3UploadUtil
 from common.utils.web_utils import WebUtils
 
@@ -121,6 +123,7 @@ class MaterialService:
         Returns:
             생성된 자료 객체
         """
+        file_id = uuid.uuid4()
         if material_type == MaterialType.URL:
             # 웹페이지 제목과 스크린샷 추출
             title, screenshot = WebUtils.get_page_info(url)
@@ -130,8 +133,9 @@ class MaterialService:
             if screenshot:
                 screenshot_bytes = screenshot.getvalue()
                 # URL을 기반으로 스크린샷 파일명 생성
-                screenshot_filename = f"screenshot_{title[:50]}.png"
+                screenshot_filename = f"screenshot_{title[:10]}.png"
                 s3_key, thumbnail_url = S3UploadUtil.upload_bytes(
+                    file_id=file_id,
                     file_data=screenshot_bytes,
                     prefix=S3KeyPrefix.THUMBNAIL,
                     file_name=screenshot_filename,
@@ -140,6 +144,7 @@ class MaterialService:
 
             # Material 객체 생성
             material = Material.objects.create(
+                id=file_id,
                 project=project,
                 title=title,
                 material_type=MaterialType.URL,
@@ -153,17 +158,47 @@ class MaterialService:
             file_name = file.name
             file_size = file.size
 
-            # S3에 업로드
+            # 파일 데이터를 읽어서 메모리에 저장 (PDF 처리를 위해)
+            file.seek(0)
+            file_data = file.read()
+
+            # S3에 업로드 (파일 포인터를 다시 처음으로)
+            file.seek(0)
             s3_key, s3_url = S3UploadUtil.upload(
-                file, S3KeyPrefix.MATERIAL, file_name
+                file_id, file, S3KeyPrefix.MATERIAL, file_name
             )
+
+            # PDF인 경우 썸네일과 페이지 수 추출
+            thumbnail_url = None
+            page_count = 0
+
+            if PDFUtils.is_pdf_file(file_name):
+                # 페이지 수 추출
+                page_count = PDFUtils.get_page_count(file_data)
+
+                # 첫 페이지 썸네일 생성
+                thumbnail = PDFUtils.get_first_page_thumbnail(file_data)
+                if thumbnail:
+                    thumbnail_bytes = thumbnail.getvalue()
+                    # 썸네일 파일명 생성
+                    thumbnail_filename = f"pdf_thumbnail_{file_name[:50]}.png"
+                    _, thumbnail_url = S3UploadUtil.upload_bytes(
+                        file_id=file_id,
+                        file_data=thumbnail_bytes,
+                        prefix=S3KeyPrefix.THUMBNAIL,
+                        file_name=thumbnail_filename,
+                        content_type="image/png",
+                    )
 
             # Material 객체 생성
             material = Material.objects.create(
+                id=file_id,
                 project=project,
                 title=file_name,
                 material_type=MaterialType.FILE,
                 url=s3_url,
+                page_count=page_count,
+                thumbnail_url=thumbnail_url,
                 metadata={
                     "file_size": file_size,
                     "s3_key": s3_key,

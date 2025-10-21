@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 from .project import Project
@@ -13,6 +15,7 @@ class Material(models.Model):
     프로젝트 내부의 학습 자료 객체
     """
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,

@@ -23,7 +23,7 @@ urlpatterns = [
     ),
     # 학습 자료 관련 API
     path(
-        "/materials/<int:pk>",
+        "/materials/<int:material_id>",
         MaterialViewSet.as_view(
             {
                 "get": "retrieve",
