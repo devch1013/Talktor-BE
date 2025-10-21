@@ -10,7 +10,7 @@ urlpatterns = [
         name="project-list-create",
     ),
     path(
-        "<int:pk>",
+        "/<int:project_id>",
         ProjectViewSet.as_view(
             {
                 "get": "retrieve",
@@ -23,12 +23,7 @@ urlpatterns = [
     ),
     # 학습 자료 관련 API
     path(
-        "materials",
-        MaterialViewSet.as_view({"get": "list", "post": "create"}),
-        name="material-list-create",
-    ),
-    path(
-        "materials/<int:pk>",
+        "/materials/<int:pk>",
         MaterialViewSet.as_view(
             {
                 "get": "retrieve",
@@ -38,5 +33,10 @@ urlpatterns = [
             }
         ),
         name="material-detail",
+    ),
+    path(
+        "/<int:project_id>/materials",
+        MaterialViewSet.as_view({"get": "list", "post": "create"}),
+        name="material-list-create",
     ),
 ]

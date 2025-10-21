@@ -4,10 +4,13 @@ from typing import List
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
+from api.project.exceptions import ProjectExceptions
 from api.project.models import Material, Project
 from api.project.models.material import MaterialType
 from api.user.models import User
+from common.exceptions.custom_exceptions import CustomException
 from common.utils.s3_utils import S3KeyPrefix, S3UploadUtil
+from common.utils.web_utils import WebUtils
 
 
 class ProjectService:
@@ -41,7 +44,10 @@ class ProjectService:
         Returns:
             프로젝트 객체
         """
-        project = get_object_or_404(Project, id=project_id, user=user)
+        try:
+            project = Project.objects.get(id=project_id, user=user)
+        except Project.DoesNotExist:
+            raise CustomException(ProjectExceptions.PROJECT_NOT_FOUND)
         return project
 
     @staticmethod
@@ -94,6 +100,82 @@ class ProjectService:
 
 class MaterialService:
     """학습 자료 관련 비즈니스 로직 처리"""
+
+    @staticmethod
+    @transaction.atomic
+    def create_materials(
+        project: Project,
+        urls: List[str] = None,
+        files: List = None,
+    ) -> List[Material]:
+        """
+        학습 자료 일괄 생성 (urls와 files를 받아서 처리)
+
+        Args:
+            project: 프로젝트 객체
+            urls: 웹 주소 목록
+            files: 업로드할 파일 목록
+
+        Returns:
+            생성된 자료 객체 목록
+        """
+        created_materials = []
+
+        # URL 처리
+        if urls:
+            for url in urls:
+                # 웹페이지 제목과 스크린샷 추출
+                title, screenshot = WebUtils.get_page_info(url)
+
+                # 스크린샷을 S3에 업로드
+                thumbnail_url = None
+                if screenshot:
+                    screenshot_bytes = screenshot.getvalue()
+                    # URL을 기반으로 스크린샷 파일명 생성
+                    screenshot_filename = f"screenshot_{title[:50]}.png"
+                    s3_key, thumbnail_url = S3UploadUtil.upload_bytes(
+                        file_data=screenshot_bytes,
+                        prefix=S3KeyPrefix.THUMBNAIL,
+                        file_name=screenshot_filename,
+                        content_type="image/png",
+                    )
+
+                # Material 객체 생성
+                material = Material.objects.create(
+                    project=project,
+                    title=title,
+                    material_type=MaterialType.URL,
+                    url=url,
+                    thumbnail_url=thumbnail_url,
+                )
+                created_materials.append(material)
+
+        # 파일 처리
+        if files:
+            for file in files:
+                # 파일명을 title로 사용
+                file_name = file.name
+                file_size = file.size
+
+                # S3에 업로드
+                s3_key, s3_url = S3UploadUtil.upload(
+                    file, S3KeyPrefix.MATERIAL, file_name
+                )
+
+                # Material 객체 생성
+                material = Material.objects.create(
+                    project=project,
+                    title=file_name,
+                    material_type=MaterialType.FILE,
+                    url=s3_url,
+                    metadata={
+                        "file_size": file_size,
+                        "s3_key": s3_key,
+                    },
+                )
+                created_materials.append(material)
+
+        return created_materials
 
     @staticmethod
     @transaction.atomic

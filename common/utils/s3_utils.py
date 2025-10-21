@@ -121,3 +121,47 @@ class S3UploadUtil:
 
             traceback.print_exc()
             return None
+
+    @classmethod
+    def upload_bytes(
+        cls,
+        file_data: bytes,
+        prefix: S3KeyPrefix,
+        file_name: str,
+        content_type: str = "application/octet-stream",
+    ) -> tuple[str, str]:
+        """
+        바이트 데이터를 S3에 업로드합니다.
+
+        Args:
+            file_data: 업로드할 파일 데이터 (bytes)
+            prefix: S3 키 프리픽스
+            file_name: 파일명
+            content_type: Content-Type (기본값: application/octet-stream)
+
+        Returns:
+            tuple[str, str]: (s3_key, s3_url)
+        """
+        _uuid = uuid.uuid4()
+        file_name = file_name.replace(" ", "_")
+        s3_bucket_name = AWSConfig.get_bucket_name()
+        s3_key = f"{prefix.value}/{_uuid}/{file_name}"
+
+        # S3에 직접 업로드
+        session = boto3.Session()
+        s3_client = session.client("s3")
+
+        try:
+            s3_client.put_object(
+                Bucket=s3_bucket_name,
+                Key=s3_key,
+                Body=file_data,
+                ContentType=content_type,
+            )
+            return s3_key, f"{AWSConfig.get_custom_domain()}/{s3_key}"
+        except Exception as e:
+            print(f"Error uploading bytes to S3: {str(e)}")
+            import traceback
+
+            traceback.print_exc()
+            return None, None

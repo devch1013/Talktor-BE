@@ -21,11 +21,11 @@ def get_swagger_response_dict(
         for exception_enum in exception_enums:
             if exception_enum.code in api_exception_str_info.keys():
                 api_exception_str_info[exception_enum.code] += (
-                    f'{{"detail" : "{exception_enum.detail}"}} // {exception_enum.description}\n\n'
+                    f'{{"message" : "{exception_enum.message}", "code" : "{exception_enum.code}" }}\n\n'
                 )
             else:
                 api_exception_str_info[exception_enum.code] = (
-                    f'{{"detail" : "{exception_enum.detail}"}} // {exception_enum.description}\n\n'
+                    f'{{"message" : "{exception_enum.message}", "code" : "{exception_enum.code}" }}\n\n'
                 )
 
     for k, v in api_exception_str_info.items():

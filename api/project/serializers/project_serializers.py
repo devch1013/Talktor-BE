@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from api.project.models import Material, Project
-from api.project.models.material import MaterialType
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -50,6 +49,12 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ["name", "color"]
+
+
+class ProjectIdQuerySerializer(serializers.Serializer):
+    """프로젝트 ID 조회 Serializer"""
+
+    project_id = serializers.IntegerField(required=True, help_text="프로젝트 ID")
 
 
 class MaterialSerializer(serializers.ModelSerializer):
@@ -107,45 +112,15 @@ class MaterialCreateSerializer(serializers.Serializer):
     파일 여러 개 동시 업로드 및 URL 지원
     """
 
-    title = serializers.CharField(max_length=200, required=True, help_text="자료명")
-    material_type = serializers.ChoiceField(
-        choices=MaterialType.choices,
-        required=True,
-        help_text="자료 타입 (file 또는 url)",
-    )
-    url = serializers.URLField(
-        max_length=500,
+    urls = serializers.ListField(
+        child=serializers.URLField(),
         required=False,
-        allow_blank=True,
-        help_text="웹 주소 (material_type이 url인 경우 필수)",
+        allow_empty=True,
+        help_text="웹 주소 목록",
     )
     files = serializers.ListField(
         child=serializers.FileField(),
         required=False,
         allow_empty=True,
-        help_text="업로드할 파일 목록 (material_type이 file인 경우 필수)",
+        help_text="파일 목록",
     )
-    page_count = serializers.IntegerField(
-        default=0, required=False, help_text="페이지 수"
-    )
-    thumbnail_url = serializers.URLField(
-        max_length=500, required=False, allow_blank=True, help_text="썸네일 URL"
-    )
-
-    def validate(self, data):
-        """자료 타입에 따른 필수 필드 검증"""
-        material_type = data.get("material_type")
-
-        if material_type == Material.MATERIAL_TYPE_FILE:
-            if not data.get("files"):
-                raise serializers.ValidationError(
-                    {"files": "파일 타입인 경우 최소 1개 이상의 파일이 필요합니다."}
-                )
-
-        elif material_type == Material.MATERIAL_TYPE_URL:
-            if not data.get("url"):
-                raise serializers.ValidationError(
-                    {"url": "URL 타입인 경우 웹 주소가 필요합니다."}
-                )
-
-        return data

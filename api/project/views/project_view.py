@@ -1,10 +1,10 @@
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from api.project.exceptions import ProjectExceptions
 from api.project.models import Material, Project
 from api.project.serializers import (
     MaterialCreateSerializer,
@@ -72,11 +72,12 @@ class ProjectViewSet(
         색상 코드는 Hex 형식 (예: #3B82F6)을 사용합니다.
         """,
         request_body=ProjectCreateSerializer,
-        responses={
-            201: ProjectSerializer,
-            400: "잘못된 요청 데이터",
-            401: "인증되지 않은 사용자",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                201: ProjectSerializer,
+            },
+            exception_enums=[],
+        ),
         tags=["프로젝트"],
     )
     def create(self, request, *args, **kwargs):
@@ -99,16 +100,17 @@ class ProjectViewSet(
 
         자신이 생성한 프로젝트만 조회할 수 있습니다.
         """,
-        responses={
-            200: ProjectSerializer,
-            401: "인증되지 않은 사용자",
-            404: "프로젝트을 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                200: ProjectSerializer,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["프로젝트"],
     )
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request, project_id: int):
         """프로젝트 상세 조회"""
-        project = ProjectService.get_project(kwargs["pk"], request.user)
+        project = ProjectService.get_project(project_id, request.user)
         serializer = ProjectSerializer(project)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -121,21 +123,21 @@ class ProjectViewSet(
         자신이 생성한 프로젝트만 수정할 수 있습니다.
         """,
         request_body=ProjectSerializer,
-        responses={
-            200: ProjectSerializer,
-            400: "잘못된 요청 데이터",
-            401: "인증되지 않은 사용자",
-            404: "프로젝트을 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                200: ProjectSerializer,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["프로젝트"],
     )
-    def update(self, request, *args, **kwargs):
+    def update(self, request, project_id: int):
         """프로젝트 수정 (전체)"""
         serializer = ProjectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         project = ProjectService.update_project(
-            kwargs["pk"], request.user, **serializer.validated_data
+            project_id, request.user, **serializer.validated_data
         )
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
@@ -149,21 +151,21 @@ class ProjectViewSet(
         자신이 생성한 프로젝트만 수정할 수 있습니다.
         """,
         request_body=ProjectSerializer,
-        responses={
-            200: ProjectSerializer,
-            400: "잘못된 요청 데이터",
-            401: "인증되지 않은 사용자",
-            404: "프로젝트을 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                200: ProjectSerializer,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["프로젝트"],
     )
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request, project_id: int):
         """프로젝트 부분 수정"""
         serializer = ProjectSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
         project = ProjectService.update_project(
-            kwargs["pk"], request.user, **serializer.validated_data
+            project_id, request.user, **serializer.validated_data
         )
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
@@ -176,16 +178,17 @@ class ProjectViewSet(
         프로젝트에 속한 모든 학습 자료도 함께 삭제됩니다.
         자신이 생성한 프로젝트만 삭제할 수 있습니다.
         """,
-        responses={
-            204: "삭제 성공",
-            401: "인증되지 않은 사용자",
-            404: "프로젝트을 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                204: None,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["프로젝트"],
     )
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, project_id: int):
         """프로젝트 삭제"""
-        ProjectService.delete_project(kwargs["pk"], request.user)
+        ProjectService.delete_project(project_id, request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -219,32 +222,16 @@ class MaterialViewSet(
         파일 타입과 URL 타입 자료를 모두 포함합니다.
         최근 생성일 기준으로 정렬됩니다.
         """,
-        manual_parameters=[
-            openapi.Parameter(
-                "project_id",
-                openapi.IN_QUERY,
-                description="프로젝트 ID",
-                type=openapi.TYPE_INTEGER,
-                required=True,
-            ),
-        ],
-        responses={
-            200: MaterialListSerializer(many=True),
-            400: "프로젝트 ID가 필요합니다",
-            401: "인증되지 않은 사용자",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                200: MaterialListSerializer(many=True),
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["학습 자료"],
     )
-    def list(self, request, *args, **kwargs):
+    def list(self, request, project_id: int):
         """학습 자료 목록 조회"""
-        project_id = request.query_params.get("project_id")
-
-        if not project_id:
-            return Response(
-                {"error": "project_id 파라미터가 필요합니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         materials = MaterialService.get_project_materials(project_id, request.user)
         serializer = MaterialListSerializer(materials, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -268,33 +255,17 @@ class MaterialViewSet(
         - page_count: 페이지 수
         - thumbnail_url: 썸네일 이미지 URL
         """,
-        manual_parameters=[
-            openapi.Parameter(
-                "project_id",
-                openapi.IN_QUERY,
-                description="프로젝트 ID",
-                type=openapi.TYPE_INTEGER,
-                required=True,
-            ),
-        ],
         request_body=MaterialCreateSerializer,
-        responses={
-            201: MaterialSerializer,
-            400: "잘못된 요청 데이터",
-            401: "인증되지 않은 사용자",
-            404: "프로젝트을 찾을 수 없음",
-        },
+        responses=get_swagger_response_dict(
+            success_response={
+                201: MaterialSerializer,
+            },
+            exception_enums=[ProjectExceptions.PROJECT_NOT_FOUND],
+        ),
         tags=["학습 자료"],
     )
-    def create(self, request, *args, **kwargs):
+    def create(self, request, project_id: int):
         """학습 자료 생성"""
-        project_id = request.query_params.get("project_id")
-
-        if not project_id:
-            return Response(
-                {"error": "project_id 파라미터가 필요합니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         # 프로젝트 조회 (권한 확인)
         project = ProjectService.get_project(project_id, request.user)
@@ -303,22 +274,21 @@ class MaterialViewSet(
         serializer = MaterialCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # 파일 처리 (multipart/form-data)
+        # urls와 files 추출
+        urls = serializer.validated_data.get("urls", [])
         files = request.FILES.getlist("files")
 
-        # 자료 생성
-        material = MaterialService.create_material(
+        # Service를 통해 학습 자료 생성
+        materials = MaterialService.create_materials(
             project=project,
-            title=serializer.validated_data["title"],
-            material_type=serializer.validated_data["material_type"],
-            url=serializer.validated_data.get("url"),
-            files=files if files else None,
-            page_count=serializer.validated_data.get("page_count", 0),
-            thumbnail_url=serializer.validated_data.get("thumbnail_url"),
+            urls=urls,
+            files=files,
         )
 
+        # 생성된 자료 목록 반환
         return Response(
-            MaterialSerializer(material).data, status=status.HTTP_201_CREATED
+            MaterialSerializer(materials, many=True).data,
+            status=status.HTTP_201_CREATED,
         )
 
     @swagger_auto_schema(
