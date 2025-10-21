@@ -103,6 +103,79 @@ class MaterialService:
 
     @staticmethod
     @transaction.atomic
+    def create_material_single(
+        project: Project,
+        material_type: str,
+        url: str = None,
+        file=None,
+    ) -> Material:
+        """
+        단일 학습 자료 생성 (URL 또는 파일 하나만 처리)
+
+        Args:
+            project: 프로젝트 객체
+            material_type: 자료 타입 ('url' 또는 'file')
+            url: 웹 주소 (material_type이 'url'인 경우)
+            file: 업로드할 파일 (material_type이 'file'인 경우)
+
+        Returns:
+            생성된 자료 객체
+        """
+        if material_type == MaterialType.URL:
+            # 웹페이지 제목과 스크린샷 추출
+            title, screenshot = WebUtils.get_page_info(url)
+
+            # 스크린샷을 S3에 업로드
+            thumbnail_url = None
+            if screenshot:
+                screenshot_bytes = screenshot.getvalue()
+                # URL을 기반으로 스크린샷 파일명 생성
+                screenshot_filename = f"screenshot_{title[:50]}.png"
+                s3_key, thumbnail_url = S3UploadUtil.upload_bytes(
+                    file_data=screenshot_bytes,
+                    prefix=S3KeyPrefix.THUMBNAIL,
+                    file_name=screenshot_filename,
+                    content_type="image/png",
+                )
+
+            # Material 객체 생성
+            material = Material.objects.create(
+                project=project,
+                title=title,
+                material_type=MaterialType.URL,
+                url=url,
+                thumbnail_url=thumbnail_url,
+            )
+            return material
+
+        elif material_type == MaterialType.FILE:
+            # 파일명을 title로 사용
+            file_name = file.name
+            file_size = file.size
+
+            # S3에 업로드
+            s3_key, s3_url = S3UploadUtil.upload(
+                file, S3KeyPrefix.MATERIAL, file_name
+            )
+
+            # Material 객체 생성
+            material = Material.objects.create(
+                project=project,
+                title=file_name,
+                material_type=MaterialType.FILE,
+                url=s3_url,
+                metadata={
+                    "file_size": file_size,
+                    "s3_key": s3_key,
+                },
+            )
+            return material
+
+        else:
+            raise ValueError(f"Invalid material_type: {material_type}")
+
+    @staticmethod
+    @transaction.atomic
     def create_materials(
         project: Project,
         urls: List[str] = None,

@@ -274,20 +274,22 @@ class MaterialViewSet(
         serializer = MaterialCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # urls와 files 추출
-        urls = serializer.validated_data.get("urls", [])
-        files = request.FILES.getlist("files")
+        # material_type에 따라 url 또는 file 추출
+        material_type = serializer.validated_data["material_type"]
+        url = serializer.validated_data.get("url")
+        file = request.FILES.get("file")
 
-        # Service를 통해 학습 자료 생성
-        materials = MaterialService.create_materials(
+        # Service를 통해 단일 학습 자료 생성
+        material = MaterialService.create_material_single(
             project=project,
-            urls=urls,
-            files=files,
+            material_type=material_type,
+            url=url,
+            file=file,
         )
 
-        # 생성된 자료 목록 반환
+        # 생성된 자료 반환
         return Response(
-            MaterialSerializer(materials, many=True).data,
+            MaterialSerializer(material).data,
             status=status.HTTP_201_CREATED,
         )
 

@@ -109,18 +109,40 @@ class MaterialListSerializer(serializers.ModelSerializer):
 class MaterialCreateSerializer(serializers.Serializer):
     """
     학습 자료 생성 Serializer
-    파일 여러 개 동시 업로드 및 URL 지원
+    단일 URL 또는 단일 파일만 지원 (클라이언트에서 병렬 처리)
     """
 
-    urls = serializers.ListField(
-        child=serializers.URLField(),
-        required=False,
-        allow_empty=True,
-        help_text="웹 주소 목록",
+    material_type = serializers.ChoiceField(
+        choices=["url", "file"],
+        required=True,
+        help_text="자료 타입 (url 또는 file)",
     )
-    files = serializers.ListField(
-        child=serializers.FileField(),
+    url = serializers.URLField(
         required=False,
-        allow_empty=True,
-        help_text="파일 목록",
+        allow_null=True,
+        help_text="웹 주소 (material_type이 url인 경우 필수)",
     )
+    file = serializers.FileField(
+        required=False,
+        allow_null=True,
+        help_text="파일 (material_type이 file인 경우 필수)",
+    )
+
+    def validate(self, data):
+        """
+        material_type에 따라 url 또는 file이 필수인지 검증
+        """
+        material_type = data.get("material_type")
+
+        if material_type == "url":
+            if not data.get("url"):
+                raise serializers.ValidationError(
+                    {"url": "material_type이 url인 경우 url은 필수입니다."}
+                )
+        elif material_type == "file":
+            if not data.get("file"):
+                raise serializers.ValidationError(
+                    {"file": "material_type이 file인 경우 file은 필수입니다."}
+                )
+
+        return data
