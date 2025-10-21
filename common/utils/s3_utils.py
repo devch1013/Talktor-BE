@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum
 
 import boto3
 from botocore.exceptions import ClientError
@@ -8,20 +9,31 @@ from django.core.files.uploadedfile import UploadedFile
 from config.settings.third_party.aws_settings import AWSConfig
 
 
+class S3KeyPrefix(Enum):
+    MATERIAL = "materials"
+    PROJECT = "projects"
+    USER = "users"
+    THUMBNAIL = "thumbnails"
+    PROFILE = "profile"
+    BACKGROUND = "background"
+    ICON = "icons"
+    AVATAR = "avatars"
+
+
 class S3UploadUtil:
     @classmethod
     def upload(
         cls,
-        image_file: UploadedFile,
-        prefix: str,
+        file: UploadedFile,
+        prefix: S3KeyPrefix,
         file_name: str,
     ) -> tuple[str, str]:
         _uuid = uuid.uuid4()
         file_name = file_name.replace(" ", "_")
         s3_bucket_name = AWSConfig.get_bucket_name()
-        s3_key = f"{prefix}/{_uuid}/{file_name}"
+        s3_key = f"{prefix.value}/{_uuid}/{file_name}"
         # Upload to S3
-        cls.upload_to_s3(image_file, s3_bucket_name, s3_key)
+        cls.upload_to_s3(file, s3_bucket_name, s3_key)
 
         return s3_key, f"{AWSConfig.get_custom_domain()}/{s3_key}"
 
