@@ -152,5 +152,10 @@ SWAGGER_SETTINGS = {
     "SECURITY_REQUIREMENTS": [{"BearerAuth": []}],
 }
 
+# Media files (User uploaded files)
+MEDIA_URL = os.getenv("FILE_SERVER_URL")
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 from .third_party.firebase_settings import *  # noqa
 from .third_party.jwt_settings import *  # noqa
+from .third_party.aws_settings import *  # noqa
