@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from api.project.exceptions import ProjectExceptions
+from api.project.serializers.project_serializers import ProjectIdQuerySerializer
 from api.quiz.exceptions import QuizExceptions
 from api.quiz.models import Quiz, QuizQuestions
 from api.quiz.serializers.quiz_serializers import (
@@ -45,15 +46,7 @@ class QuizViewSet(
         프로젝트 ID를 쿼리 파라미터로 받아 해당 프로젝트의 완료된 퀴즈 목록을 반환합니다.
         최근 생성일 기준으로 정렬됩니다.
         """,
-        manual_parameters=[
-            openapi.Parameter(
-                "project_id",
-                openapi.IN_QUERY,
-                description="프로젝트 ID",
-                type=openapi.TYPE_INTEGER,
-                required=True,
-            ),
-        ],
+        query_serializer=ProjectIdQuerySerializer,
         responses=get_swagger_response_dict(
             success_response={
                 200: QuizListSerializer(many=True),
@@ -62,7 +55,12 @@ class QuizViewSet(
         ),
         tags=["퀴즈"],
     )
-    def list(self, request, project_id: int):
+    def list(self, request):
+        project_id = (
+            ProjectIdQuerySerializer(data=request.query_params)
+            .is_valid(raise_exception=True)
+            .validated_data.get("project_id")
+        )
         """프로젝트의 퀴즈 목록 조회"""
         quizzes = QuizService.get_project_quizzes(project_id, request.user)
         serializer = QuizListSerializer(quizzes, many=True)
